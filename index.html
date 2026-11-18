@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PenzaGuesser</title>
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
   <!-- Меню -->
@@ -12,6 +12,16 @@
     <div class="menu-card">
       <h1>Penza<span>Guesser</span></h1>
       <p class="lead">Тебя высаживают в случайном месте Пензы. Осмотрись и поставь метку на карте — чем ближе, тем больше очков.</p>
+
+      <div class="field">
+        <label>Где</label>
+        <div class="seg" data-name="area">
+          <button data-value="city" class="on">Город</button>
+          <button data-value="all">Вся Пенза</button>
+          <button data-value="private">Частный сектор</button>
+        </div>
+        <small id="areaHint">Многоэтажки, центр, Арбеково, Терновка — без деревень и частного сектора.</small>
+      </div>
 
       <div class="field">
         <label>Режим</label>
@@ -101,9 +111,9 @@
     </div>
   </section>
 
-  <script src="config.js?v=6"></script>
-  <script src="js/penza.js?v=6"></script>
-  <script src="js/roads.js?v=6"></script>
-  <script src="js/app.js?v=6"></script>
+  <script src="config.js?v=7"></script>
+  <script src="js/penza.js?v=7"></script>
+  <script src="js/roads.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 </body>
 </html>

@@ -34,11 +34,30 @@
   const MAP_SIZE = distance(BBOX[0], BBOX[1]);
 
   // Точки на дорогах (js/roads.js) — панорама рядом находится почти всегда с первого запроса.
+  // PENZA_URBAN — сколько многоэтажек рядом с точкой; по нему делим на «город» и «частный сектор».
   const ROADS = window.PENZA_ROADS || [];
+  const URBAN = window.PENZA_URBAN || [];
   const ROAD_COUNT = Math.floor(ROADS.length / 2);
+  const CITY_MIN = 3;
+  const AREA_FILTERS = {
+    all: () => true,
+    city: (i) => (URBAN[i] || 0) >= CITY_MIN,
+    private: (i) => (URBAN[i] || 0) === 0,
+  };
+  const areaPools = {};
+  function areaPool() {
+    const area = AREA_FILTERS[settings.area] ? settings.area : 'all';
+    if (!areaPools[area]) {
+      const f = AREA_FILTERS[area];
+      areaPools[area] = [];
+      for (let i = 0; i < ROAD_COUNT; i++) if (!URBAN.length || f(i)) areaPools[area].push(i);
+    }
+    return areaPools[area];
+  }
   function randomPoint() {
-    if (ROAD_COUNT) {
-      const i = Math.floor(Math.random() * ROAD_COUNT) * 2;
+    const pool = ROAD_COUNT ? areaPool() : [];
+    if (pool.length) {
+      const i = pool[Math.floor(Math.random() * pool.length)] * 2;
       return [ROADS[i], ROADS[i + 1]];
     }
     for (;;) {
@@ -66,7 +85,12 @@
   const fmtTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   // ---------------- состояние ----------------
-  const settings = { mode: 'moving', time: 0, rounds: 5 };
+  const settings = { area: 'city', mode: 'moving', time: 0, rounds: 5 };
+  const AREA_HINTS = {
+    city: 'Многоэтажки, центр, Арбеково, Терновка — без деревень и частного сектора.',
+    all: 'Любая улица города, включая частный сектор, окраины и объездную.',
+    private: 'Только частный сектор и бывшие деревни — для хардкора.',
+  };
   const MODE_HINTS = {
     moving: 'Ходи по панорамам, крути камеру, приближай.',
     nomove: 'Стоишь на месте, но можно крутить камеру и приближать.',
@@ -238,7 +262,11 @@
     $$('.screen').forEach((s) => s.classList.toggle('active', s.id === id));
   }
 
-  function bestKey() { return `pg-best-${settings.mode}-${settings.time}-${settings.rounds}`; }
+  function bestKey() {
+    // старые рекорды (до выбора района) были по всей Пензе
+    const area = settings.area === 'all' ? '' : `${settings.area}-`;
+    return `pg-best-${area}${settings.mode}-${settings.time}-${settings.rounds}`;
+  }
   function readBest() { try { return +localStorage.getItem(bestKey()) || 0; } catch { return 0; } }
   function writeBest(v) { try { localStorage.setItem(bestKey(), String(v)); } catch { /* ignore */ } }
   function renderBest() {
@@ -255,8 +283,9 @@
       seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn));
       const name = seg.dataset.name;
       const v = btn.dataset.value;
-      settings[name] = name === 'mode' ? v : +v;
+      settings[name] = (name === 'mode' || name === 'area') ? v : +v;
       if (name === 'mode') $('#modeHint').textContent = MODE_HINTS[v];
+      if (name === 'area') $('#areaHint').textContent = AREA_HINTS[v];
       renderBest();
     });
   });
