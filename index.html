@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PenzaGuesser</title>
+  <link rel="stylesheet" href="css/style.css?v=6">
+</head>
+<body>
+  <!-- Меню -->
+  <section id="menu" class="screen active">
+    <div class="menu-card">
+      <h1>Penza<span>Guesser</span></h1>
+      <p class="lead">Тебя высаживают в случайном месте Пензы. Осмотрись и поставь метку на карте — чем ближе, тем больше очков.</p>
+
+      <div class="field">
+        <label>Режим</label>
+        <div class="seg" data-name="mode">
+          <button data-value="moving" class="on">Можно ходить</button>
+          <button data-value="nomove">Без ходьбы</button>
+          <button data-value="nmpz">NMPZ</button>
+        </div>
+        <small id="modeHint">Ходи по панорамам, крути камеру, приближай.</small>
+      </div>
+
+      <div class="field">
+        <label>Время на раунд</label>
+        <div class="seg" data-name="time">
+          <button data-value="0" class="on">Без лимита</button>
+          <button data-value="60">1 мин</button>
+          <button data-value="120">2 мин</button>
+          <button data-value="300">5 мин</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Раундов</label>
+        <div class="seg" data-name="rounds">
+          <button data-value="3">3</button>
+          <button data-value="5" class="on">5</button>
+          <button data-value="10">10</button>
+        </div>
+      </div>
+
+      <button id="startBtn" class="primary big" disabled>Загрузка карт…</button>
+      <p id="menuError" class="error"></p>
+      <div id="keyBox" class="keybox" hidden>
+        <label for="keyInput">API-ключ Яндекс Карт</label>
+        <div class="keyrow">
+          <input id="keyInput" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+          <button id="keySave" class="ghost">Сохранить</button>
+        </div>
+        <small>Получить: <a href="https://developer.tech.yandex.ru/services/" target="_blank" rel="noopener">developer.tech.yandex.ru</a> → Подключить API → «JavaScript API и HTTP Геокодер». Ключ хранится только в этом браузере.</small>
+      </div>
+      <p id="best" class="best"></p>
+      <p id="usage" class="best"></p>
+    </div>
+  </section>
+
+  <!-- Игра -->
+  <section id="game" class="screen">
+    <div id="pano"></div>
+    <div id="panoLock" hidden></div>
+    <div id="loading" class="loading" hidden><div class="spinner"></div><span>Ищем место в Пензе…</span></div>
+
+    <div class="hud">
+      <div class="hud-item"><small>Раунд</small><b id="hudRound">1 / 5</b></div>
+      <div class="hud-item"><small>Очки</small><b id="hudScore">0</b></div>
+      <div class="hud-item" id="hudTimerBox" hidden><small>Время</small><b id="hudTimer">0:00</b></div>
+    </div>
+
+    <div class="tools">
+      <button id="returnBtn" title="Вернуться на старт (R)">⟲ На старт</button>
+      <button id="quitBtn" title="Выйти в меню">✕</button>
+    </div>
+
+    <div id="guessBox" class="guess-box">
+      <div class="guess-size">
+        <button data-size="-1" title="Уменьшить">−</button>
+        <button data-size="1" title="Увеличить">+</button>
+        <button id="pinBtn" title="Закрепить развёрнутой"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M16 3l5 5-3 1-4 4 1 5-2 2-4-5-5 5-1-1 5-5-5-4 2-2 5 1 4-4z"/></svg></button>
+      </div>
+      <div id="guessMap"></div>
+      <button id="guessBtn" class="primary" disabled>Поставь метку на карте</button>
+    </div>
+  </section>
+
+  <!-- Результат раунда / финал -->
+  <section id="result" class="screen">
+    <div id="resultMap"></div>
+    <div class="result-panel">
+      <div id="resultRound" class="result-title"></div>
+      <div id="resultMain" class="result-main"></div>
+      <div class="bar"><div id="resultBar"></div></div>
+      <div id="resultSub" class="result-sub"></div>
+      <div id="resultTable" class="result-table"></div>
+      <div class="result-actions">
+        <button id="nextBtn" class="primary big">Дальше</button>
+        <button id="menuBtn" class="ghost" hidden>В меню</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="config.js?v=6"></script>
+  <script src="js/penza.js?v=6"></script>
+  <script src="js/roads.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
+</body>
+</html>
