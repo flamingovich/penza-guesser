@@ -87,14 +87,14 @@
   // ---------------- состояние ----------------
   const settings = { area: 'city', mode: 'moving', time: 0, rounds: 5 };
   const AREA_HINTS = {
-    city: 'Многоэтажки, центр, Арбеково, Терновка — без деревень и частного сектора.',
-    all: 'Любая улица города, включая частный сектор, окраины и объездную.',
-    private: 'Только частный сектор и бывшие деревни — для хардкора.',
+    city: 'Многоэтажки, центр, Арбеково, Терновка',
+    all: 'Любая улица, включая окраины',
+    private: 'Частный сектор и бывшие деревни',
   };
   const MODE_HINTS = {
-    moving: 'Ходи по панорамам, крути камеру, приближай.',
-    nomove: 'Стоишь на месте, но можно крутить камеру и приближать.',
-    nmpz: 'No Move, No Pan, No Zoom — только один кадр.',
+    moving: 'Ходишь, крутишь, приближаешь',
+    nomove: 'Стоишь на месте, крутишь камеру',
+    nmpz: 'Один кадр, без поворота и зума',
   };
   let game = null;
   let player = null;
@@ -172,7 +172,7 @@
     return w;
   }
 
-  const KEY_ERROR = 'Яндекс не отдаёт панорамы без API-ключа.\nВставь ключ ниже (бесплатный, «JavaScript API и HTTP Геокодер»).';
+  const KEY_ERROR = 'Яндекс не отдал панораму. Либо этот сайт не разрешён в настройках ключа (HTTP Referer), либо на сегодня кончился лимит запросов';
 
   // Бесплатный ключ — 100 запросов в сутки, а панорамы, по слухам, считаются дороже.
   // Поэтому каждое место ищем максимум за несколько запросов и ведём счётчик за день.
@@ -208,7 +208,7 @@
       if (!inPolygon(pos) || distance(p, pos) > 300) continue;
       return { pano, pos, name: safeName(pano) };
     }
-    throw new Error('Не получилось найти панораму за несколько попыток. Попробуй ещё раз.');
+    throw new Error('Не получилось найти панораму за несколько попыток, попробуй ещё раз');
   }
 
   // Счётчик обращений к панорамам за сегодня (только в этом браузере).
@@ -227,7 +227,7 @@
   function renderUsage() {
     const u = usage.read();
     $('#usage').textContent = (u.locate || u.move)
-      ? `Сегодня: ${u.locate} поисков панорам, ${u.move} переходов. Расход смотри в кабинете Яндекса → Статистика.`
+      ? `Сегодня с этого браузера: ${u.locate} панорам, ${u.move} шагов`
       : '';
   }
   function safeName(p) { try { return p.getName() || ''; } catch { return ''; } }
@@ -275,6 +275,83 @@
     renderUsage();
   }
 
+  // ---------------- карта города из точек улиц ----------------
+  // Каждая точка — кусок улицы из OSM. Жёлтым — где сейчас может выпасть место.
+  const cityMap = (() => {
+    const canvas = $('#cityCanvas');
+    const ctx = canvas.getContext('2d');
+    let proj = null;
+    let shown = null;     // текущая яркость каждой точки 0..1
+    let anim = 0;
+
+    function layout() {
+      const r = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(r.width * dpr);
+      canvas.height = Math.round(r.height * dpr);
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      const k = Math.cos(rad(53.2));
+      for (let i = 0; i < ROAD_COUNT; i++) {
+        const x = ROADS[2 * i + 1] * k, y = -ROADS[2 * i];
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+      const pad = 24 * dpr;
+      const s = Math.min((canvas.width - 2 * pad) / (maxX - minX), (canvas.height - 2 * pad - 24 * dpr) / (maxY - minY));
+      const ox = (canvas.width - (maxX - minX) * s) / 2;
+      const oy = (canvas.height - 24 * dpr - (maxY - minY) * s) / 2;
+      proj = { k, s, ox, oy, minX, minY, dpr };
+    }
+
+    function draw() {
+      if (!proj || !shown) return;
+      const { k, s, ox, oy, minX, minY, dpr } = proj;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const dim = 1.6 * dpr, lit = 2.2 * dpr;
+      ctx.fillStyle = 'rgba(237, 237, 237, 0.16)';
+      for (let i = 0; i < ROAD_COUNT; i++) {
+        if (shown[i] >= 1) continue;
+        const x = ox + (ROADS[2 * i + 1] * k - minX) * s, y = oy + (-ROADS[2 * i] - minY) * s;
+        ctx.fillRect(x - dim / 2, y - dim / 2, dim, dim);
+      }
+      ctx.fillStyle = '#ffcc33';
+      for (let i = 0; i < ROAD_COUNT; i++) {
+        const a = shown[i];
+        if (a <= 0) continue;
+        ctx.globalAlpha = a;
+        const x = ox + (ROADS[2 * i + 1] * k - minX) * s, y = oy + (-ROADS[2 * i] - minY) * s;
+        ctx.fillRect(x - lit / 2, y - lit / 2, lit, lit);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function update(animate = true) {
+      const f = AREA_FILTERS[settings.area] || AREA_FILTERS.all;
+      const target = new Float32Array(ROAD_COUNT);
+      let n = 0;
+      for (let i = 0; i < ROAD_COUNT; i++) if (!URBAN.length || f(i)) { target[i] = 1; n++; }
+      $('#cityCaption').textContent = `${fmtNum(n)} из ${fmtNum(ROAD_COUNT)} точек на улицах · OpenStreetMap`;
+      if (!shown || !animate) { shown = target; draw(); return; }
+      const from = shown.slice();
+      const t0 = performance.now();
+      cancelAnimationFrame(anim);
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / 360);
+        const e = 1 - Math.pow(1 - t, 3);
+        for (let i = 0; i < ROAD_COUNT; i++) shown[i] = from[i] + (target[i] - from[i]) * e;
+        draw();
+        if (t < 1) anim = requestAnimationFrame(step);
+      };
+      shown = from.slice();
+      anim = requestAnimationFrame(step);
+    }
+
+    if (ROAD_COUNT) {
+      new ResizeObserver(() => { layout(); draw(); }).observe(canvas);
+    }
+    return { update };
+  })();
+
   // ---------------- меню ----------------
   $$('.seg').forEach((seg) => {
     seg.addEventListener('click', (e) => {
@@ -285,7 +362,7 @@
       const v = btn.dataset.value;
       settings[name] = (name === 'mode' || name === 'area') ? v : +v;
       if (name === 'mode') $('#modeHint').textContent = MODE_HINTS[v];
-      if (name === 'area') $('#areaHint').textContent = AREA_HINTS[v];
+      if (name === 'area') { $('#areaHint').textContent = AREA_HINTS[v]; cityMap.update(); }
       renderBest();
     });
   });
@@ -311,7 +388,7 @@
   async function nextRound() {
     const token = ++roundToken;
     game.index++;
-    $('#hudRound').textContent = `${game.index + 1} / ${settings.rounds}`;
+    $('#hudRound').textContent = `${game.index + 1}/${settings.rounds}`;
     $('#hudScore').textContent = fmtNum(game.total);
     $('#loading').hidden = false;
     $('#guessBtn').disabled = true;
@@ -445,8 +522,10 @@
   function ensureResultMap() {
     if (resultMap) { resultMap.geoObjects.removeAll(); return; }
     resultMap = new ymaps.Map('resultMap', {
-      center: PENZA.center, zoom: 12, controls: ['zoomControl'],
+      center: PENZA.center, zoom: 12, controls: [],
     }, { suppressMapOpenBlock: true, autoFitToViewport: 'always' });
+    // слева лежит билет — зум справа
+    resultMap.controls.add('zoomControl', { size: 'small', position: { right: 16, top: 96 } });
   }
 
   function drawPair(round, n) {
@@ -457,33 +536,76 @@
     resultMap.geoObjects.add(actual);
     const pts = [round.loc.pos];
     if (round.guess) {
-      resultMap.geoObjects.add(new ymaps.Placemark(round.guess, { hintContent: 'Твоя метка' }, { preset: 'islands#blueCircleDotIcon' }));
+      resultMap.geoObjects.add(new ymaps.Placemark(round.guess, { hintContent: 'Твоя метка' }, { preset: 'islands#blackCircleDotIcon' }));
       resultMap.geoObjects.add(new ymaps.Polyline([round.guess, round.loc.pos], {}, {
-        strokeColor: '#1d2733', strokeWidth: 3, strokeStyle: 'dash', strokeOpacity: 0.8,
+        strokeColor: '#1f1b16', strokeWidth: 3, strokeStyle: 'dash', strokeOpacity: 0.85,
       }));
       pts.push(round.guess);
     }
     return pts;
   }
 
+  const isNarrow = () => window.matchMedia('(max-width: 700px)').matches;
+
   function fitTo(points) {
     show('result'); // карта должна быть видимой, чтобы правильно посчитать размеры
     resultMap.container.fitToViewport();
-    if (points.length === 1) { resultMap.setCenter(points[0], 15); return; }
+    // слева на десктопе лежит билет — не прячем под него метки
+    const margin = isNarrow() ? 40 : [64, 64, 64, 444];
+    if (points.length === 1) {
+      // одна точка (метки не было) — сдвигаем центр так, чтобы флаг был правее билета
+      const p = points[0];
+      resultMap.setCenter(isNarrow() ? p : [p[0], p[1] - 0.006], 15);
+      return;
+    }
     const la = points.map((p) => p[0]), lo = points.map((p) => p[1]);
     resultMap.setBounds([[Math.min(...la), Math.min(...lo)], [Math.max(...la), Math.max(...lo)]], {
-      checkZoomRange: true, zoomMargin: 80,
+      checkZoomRange: true, zoomMargin: margin,
     }).then(() => { if (resultMap.getZoom() > 17) resultMap.setZoom(17); });
   }
 
-  function animateBar(score, max) {
-    const bar = $('#resultBar');
+  // Номер билета — промах в метрах. Счастливый, если суммы первых и последних трёх цифр равны.
+  function ticketNumber(dist) {
+    const n = dist == null ? Math.floor(Math.random() * 1e6) : Math.min(999999, Math.round(dist));
+    const s = String(n).padStart(6, '0');
+    const sum = (t) => [...t].reduce((a, c) => a + +c, 0);
+    return { text: s, lucky: sum(s.slice(0, 3)) === sum(s.slice(3)) };
+  }
+
+  function fillBar(share) {
+    const bar = $('#tkBar');
     bar.style.transition = 'none';
-    bar.style.width = '0';
+    bar.style.transform = 'scaleX(0)';
     requestAnimationFrame(() => requestAnimationFrame(() => {
       bar.style.transition = '';
-      bar.style.width = `${(score / max) * 100}%`;
+      bar.style.transform = `scaleX(${share})`;
     }));
+  }
+
+  function restartTicket() {
+    const t = $('#ticket');
+    t.style.animation = 'none';
+    void t.offsetWidth;
+    t.style.animation = '';
+  }
+
+  function stamp(text) {
+    const el = $('#tkStamp');
+    el.textContent = text || '';
+    el.hidden = !text;
+  }
+
+  // Число очков «прокручивается» до итога
+  function countUp(el, to, suffix = '') {
+    const t0 = performance.now();
+    const dur = 700;
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - t, 3);
+      el.innerHTML = fmtNum(Math.round(to * e)) + suffix;
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   }
 
   function showRoundResult(round) {
@@ -491,15 +613,20 @@
     ensureResultMap();
     const pts = drawPair(round);
     const last = game.index + 1 >= settings.rounds;
-    $('#resultRound').textContent = `Раунд ${game.index + 1} из ${settings.rounds}`;
-    $('#resultMain').innerHTML = round.guess
-      ? `<em>${fmtNum(round.score)}</em> очков · мимо на ${fmtDist(round.dist)}`
-      : `Время вышло — <em>0</em> очков`;
-    $('#resultSub').textContent = (round.loc.name ? `Это было: ${round.loc.name}. ` : '') + `Всего: ${fmtNum(game.total)}`;
-    $('#resultTable').innerHTML = '';
-    $('#nextBtn').textContent = last ? 'Итоги игры' : 'Следующий раунд';
+    const no = ticketNumber(round.dist);
+    restartTicket();
+    $('#tkRoute').textContent = `Пенза · раунд ${game.index + 1} из ${settings.rounds}`;
+    $('#tkNumber').textContent = `Билет ${no.text}`;
+    $('#tkLabel').textContent = 'Очки за раунд';
+    countUp($('#tkScore'), round.score, '<small>/ 5000</small>');
+    $('#tkLine').textContent = round.guess ? `Мимо на ${fmtDist(round.dist)}` : 'Время вышло, метки нет';
+    $('#tkPlace').textContent = round.loc.name ? `Это было: ${round.loc.name}` : '';
+    $('#tkRows').innerHTML = '';
+    $('#tkTotal').textContent = `Всего ${fmtNum(game.total)}`;
+    stamp(round.score === MAX_SCORE ? 'В точку' : no.lucky && round.guess ? 'Счастливый билет' : '');
+    $('#nextLabel').textContent = last ? 'Итоги игры' : 'Следующий раунд';
     $('#menuBtn').hidden = true;
-    animateBar(round.score, MAX_SCORE);
+    fillBar(round.score / MAX_SCORE);
     fitTo(pts);
   }
 
@@ -511,16 +638,23 @@
     const best = readBest();
     const isRecord = game.total > best;
     if (isRecord) writeBest(game.total);
-    $('#resultRound').textContent = 'Игра окончена';
-    $('#resultMain').innerHTML = `<em>${fmtNum(game.total)}</em> из ${fmtNum(max)}`;
-    $('#resultSub').textContent = isRecord ? 'Новый рекорд!' : best ? `Рекорд: ${fmtNum(best)}` : '';
-    $('#resultTable').innerHTML = game.rounds.map((r, i) =>
-      `<div class="row"><span>Раунд ${i + 1}</span><span>${r.guess ? fmtDist(r.dist) : 'не угадал'}</span><span>${fmtNum(r.score)}</span></div>`
+    const areaName = { city: 'город', all: 'вся Пенза', private: 'частный сектор' }[settings.area];
+    restartTicket();
+    $('#tkRoute').textContent = `Пенза · ${areaName} · итог`;
+    $('#tkNumber').textContent = `Билет ${String(game.total).padStart(6, "0")}`;
+    $('#tkLabel').textContent = `Очки за ${settings.rounds} раундов`;
+    countUp($('#tkScore'), game.total, `<small>/ ${fmtNum(max)}</small>`);
+    $('#tkLine').textContent = '';
+    $('#tkPlace').textContent = '';
+    $('#tkRows').innerHTML = game.rounds.map((r, i) =>
+      `<div class="row"><span>Раунд ${i + 1}</span><span>${r.guess ? fmtDist(r.dist) : 'без метки'}</span><span>${fmtNum(r.score)}</span></div>`
     ).join('');
-    $('#nextBtn').textContent = 'Сыграть ещё';
+    $('#tkTotal').textContent = isRecord ? '' : best ? `Рекорд ${fmtNum(best)}` : '';
+    stamp(isRecord ? 'Новый рекорд' : '');
+    $('#nextLabel').textContent = 'Сыграть ещё';
     $('#menuBtn').hidden = false;
     game.finished = true;
-    animateBar(game.total, max);
+    fillBar(game.total / max);
     fitTo(pts);
   }
 
@@ -557,6 +691,9 @@
 
   // ---------------- старт ----------------
   renderBest();
+  $('#areaHint').textContent = AREA_HINTS[settings.area];
+  $('#modeHint').textContent = MODE_HINTS[settings.mode];
+  cityMap.update(false);
   loadYmaps().then(() => {
     if (!ymaps.panorama.isSupported()) throw new Error('Браузер не поддерживает панорамы Яндекса.');
     $('#startBtn').disabled = false;

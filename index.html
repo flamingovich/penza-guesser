@@ -4,66 +4,94 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PenzaGuesser</title>
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap&subset=cyrillic" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    </defs>
+  </svg>
+
   <!-- Меню -->
   <section id="menu" class="screen active">
-    <div class="menu-card">
-      <h1>Penza<span>Guesser</span></h1>
-      <p class="lead">Тебя высаживают в случайном месте Пензы. Осмотрись и поставь метку на карте — чем ближе, тем больше очков.</p>
+    <div class="menu-wrap">
+      <div class="menu-side">
+        <div class="brand"><span class="brand-mark" aria-hidden="true"></span>PenzaGuesser</div>
 
-      <div class="field">
-        <label>Где</label>
-        <div class="seg" data-name="area">
-          <button data-value="city" class="on">Город</button>
-          <button data-value="all">Вся Пенза</button>
-          <button data-value="private">Частный сектор</button>
+        <h1>Где это в&nbsp;Пензе?</h1>
+        <p class="lead">Случайная панорама, одна метка на карте. Чем ближе, тем больше очков — до 5000 за раунд.</p>
+
+        <div class="settings">
+          <div class="field">
+            <div class="field-head"><span>Где</span><small id="areaHint">Многоэтажки, центр, Арбеково, Терновка</small></div>
+            <div class="seg" data-name="area">
+              <button data-value="city" class="on">Город</button>
+              <button data-value="all">Вся Пенза</button>
+              <button data-value="private">Частный сектор</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-head"><span>Режим</span><small id="modeHint">Ходишь, крутишь, приближаешь</small></div>
+            <div class="seg" data-name="mode">
+              <button data-value="moving" class="on">Можно ходить</button>
+              <button data-value="nomove">Без ходьбы</button>
+              <button data-value="nmpz">NMPZ</button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <div class="field-head"><span>Время на раунд</span></div>
+              <div class="seg" data-name="time">
+                <button data-value="0" class="on">∞</button>
+                <button data-value="60">1 мин</button>
+                <button data-value="120">2 мин</button>
+                <button data-value="300">5 мин</button>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-head"><span>Раундов</span></div>
+              <div class="seg" data-name="rounds">
+                <button data-value="3">3</button>
+                <button data-value="5" class="on">5</button>
+                <button data-value="10">10</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <small id="areaHint">Многоэтажки, центр, Арбеково, Терновка — без деревень и частного сектора.</small>
+
+        <button id="startBtn" class="btn btn-primary btn-big" disabled>Загрузка карт…</button>
+        <p id="menuError" class="error"></p>
+
+        <div id="keyBox" class="keybox" hidden>
+          <label for="keyInput">API-ключ Яндекс Карт</label>
+          <div class="keyrow">
+            <input id="keyInput" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+            <button id="keySave" class="btn btn-secondary">Сохранить</button>
+          </div>
+          <small>Получить: <a href="https://developer.tech.yandex.ru/services/" target="_blank" rel="noopener">developer.tech.yandex.ru</a> → JavaScript API. Ключ хранится только в этом браузере</small>
+        </div>
+
+        <div class="meta">
+          <span id="best"></span>
+          <span id="usage"></span>
+        </div>
       </div>
 
-      <div class="field">
-        <label>Режим</label>
-        <div class="seg" data-name="mode">
-          <button data-value="moving" class="on">Можно ходить</button>
-          <button data-value="nomove">Без ходьбы</button>
-          <button data-value="nmpz">NMPZ</button>
-        </div>
-        <small id="modeHint">Ходи по панорамам, крути камеру, приближай.</small>
-      </div>
-
-      <div class="field">
-        <label>Время на раунд</label>
-        <div class="seg" data-name="time">
-          <button data-value="0" class="on">Без лимита</button>
-          <button data-value="60">1 мин</button>
-          <button data-value="120">2 мин</button>
-          <button data-value="300">5 мин</button>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Раундов</label>
-        <div class="seg" data-name="rounds">
-          <button data-value="3">3</button>
-          <button data-value="5" class="on">5</button>
-          <button data-value="10">10</button>
-        </div>
-      </div>
-
-      <button id="startBtn" class="primary big" disabled>Загрузка карт…</button>
-      <p id="menuError" class="error"></p>
-      <div id="keyBox" class="keybox" hidden>
-        <label for="keyInput">API-ключ Яндекс Карт</label>
-        <div class="keyrow">
-          <input id="keyInput" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" spellcheck="false">
-          <button id="keySave" class="ghost">Сохранить</button>
-        </div>
-        <small>Получить: <a href="https://developer.tech.yandex.ru/services/" target="_blank" rel="noopener">developer.tech.yandex.ru</a> → Подключить API → «JavaScript API и HTTP Геокодер». Ключ хранится только в этом браузере.</small>
-      </div>
-      <p id="best" class="best"></p>
-      <p id="usage" class="best"></p>
+      <figure class="menu-map">
+        <canvas id="cityCanvas" aria-label="Карта улиц Пензы"></canvas>
+        <figcaption id="cityCaption"></figcaption>
+      </figure>
     </div>
   </section>
 
@@ -71,49 +99,66 @@
   <section id="game" class="screen">
     <div id="pano"></div>
     <div id="panoLock" hidden></div>
-    <div id="loading" class="loading" hidden><div class="spinner"></div><span>Ищем место в Пензе…</span></div>
+    <div id="loading" class="loading" hidden>
+      <div class="road" aria-hidden="true"><i></i><i></i><i></i></div>
+      <span>Ищем место в Пензе</span>
+    </div>
+
+    <div class="tools">
+      <button id="quitBtn" class="icon-btn" title="Выйти в меню" aria-label="Выйти в меню"><svg><use href="#i-x"/></svg></button>
+      <button id="returnBtn" class="icon-btn wide" title="Вернуться на старт (R)"><svg><use href="#i-undo"/></svg><span>На старт</span><kbd>R</kbd></button>
+    </div>
 
     <div class="hud">
-      <div class="hud-item"><small>Раунд</small><b id="hudRound">1 / 5</b></div>
+      <div class="hud-item"><small>Раунд</small><b id="hudRound">1/5</b></div>
       <div class="hud-item"><small>Очки</small><b id="hudScore">0</b></div>
       <div class="hud-item" id="hudTimerBox" hidden><small>Время</small><b id="hudTimer">0:00</b></div>
     </div>
 
-    <div class="tools">
-      <button id="returnBtn" title="Вернуться на старт (R)">⟲ На старт</button>
-      <button id="quitBtn" title="Выйти в меню">✕</button>
-    </div>
-
     <div id="guessBox" class="guess-box">
       <div class="guess-size">
-        <button data-size="-1" title="Уменьшить">−</button>
-        <button data-size="1" title="Увеличить">+</button>
-        <button id="pinBtn" title="Закрепить развёрнутой"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M16 3l5 5-3 1-4 4 1 5-2 2-4-5-5 5-1-1 5-5-5-4 2-2 5 1 4-4z"/></svg></button>
+        <button data-size="-1" class="icon-btn sm" title="Уменьшить" aria-label="Уменьшить карту"><svg><use href="#i-minus"/></svg></button>
+        <button data-size="1" class="icon-btn sm" title="Увеличить" aria-label="Увеличить карту"><svg><use href="#i-plus"/></svg></button>
+        <button id="pinBtn" class="icon-btn sm" title="Закрепить развёрнутой" aria-label="Закрепить карту"><svg><use href="#i-pin"/></svg></button>
       </div>
       <div id="guessMap"></div>
-      <button id="guessBtn" class="primary" disabled>Поставь метку на карте</button>
+      <button id="guessBtn" class="btn btn-primary" disabled>Поставь метку на карте</button>
     </div>
   </section>
 
   <!-- Результат раунда / финал -->
   <section id="result" class="screen">
     <div id="resultMap"></div>
-    <div class="result-panel">
-      <div id="resultRound" class="result-title"></div>
-      <div id="resultMain" class="result-main"></div>
-      <div class="bar"><div id="resultBar"></div></div>
-      <div id="resultSub" class="result-sub"></div>
-      <div id="resultTable" class="result-table"></div>
+    <div class="result-dock">
+      <article class="ticket" id="ticket">
+        <header class="ticket-head">
+          <span id="tkRoute">Пенза · раунд 1 из 5</span>
+          <span id="tkNumber" class="ticket-no">Билет 000000</span>
+        </header>
+        <div class="ticket-body">
+          <div id="tkLabel" class="ticket-label">Очки</div>
+          <div id="tkScore" class="ticket-score">0</div>
+          <div class="ticket-bar"><i id="tkBar"></i></div>
+          <div id="tkLine" class="ticket-line"></div>
+          <div id="tkPlace" class="ticket-place"></div>
+          <div id="tkRows" class="ticket-rows"></div>
+        </div>
+        <div class="ticket-tear" aria-hidden="true"></div>
+        <footer class="ticket-foot">
+          <span id="tkTotal"></span>
+          <span id="tkStamp" class="stamp" hidden></span>
+        </footer>
+      </article>
       <div class="result-actions">
-        <button id="nextBtn" class="primary big">Дальше</button>
-        <button id="menuBtn" class="ghost" hidden>В меню</button>
+        <button id="nextBtn" class="btn btn-primary btn-big"><span id="nextLabel">Дальше</span><svg><use href="#i-arrow"/></svg></button>
+        <button id="menuBtn" class="btn btn-secondary btn-big" hidden>В меню</button>
       </div>
     </div>
   </section>
 
-  <script src="config.js?v=7"></script>
-  <script src="js/penza.js?v=7"></script>
-  <script src="js/roads.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="config.js?v=8"></script>
+  <script src="js/penza.js?v=8"></script>
+  <script src="js/roads.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>
