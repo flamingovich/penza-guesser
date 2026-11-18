@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Unbounded:wght@400;500;600&display=swap&subset=cyrillic" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -29,10 +29,18 @@
       <div class="menu-side">
         <div class="brand"><img class="brand-logo" src="favicon.svg?v=1" width="32" height="32" alt="">PenzaGuesser</div>
 
-        <h1>Где это в&nbsp;Пензе?</h1>
+        <h1 id="title">Где это в&nbsp;Пензе?</h1>
         <p class="lead">Случайная панорама, одна метка на карте. Чем ближе, тем больше очков — до 5000 за раунд.</p>
 
         <div class="settings">
+          <div class="field">
+            <div class="field-head"><span>Карта</span></div>
+            <div class="seg" data-name="city">
+              <button data-value="penza" class="on">Пенза</button>
+              <button data-value="minsk">Минск</button>
+            </div>
+          </div>
+
           <div class="field">
             <div class="field-head"><span>Где</span><small id="areaHint">Многоэтажки, центр, Арбеково, Терновка</small></div>
             <div class="seg" data-name="area">
@@ -158,9 +166,11 @@
     </div>
   </section>
 
-  <script src="config.js?v=10"></script>
-  <script src="js/penza.js?v=10"></script>
-  <script src="js/roads.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="config.js?v=12"></script>
+  <script src="js/penza.js?v=12"></script>
+  <script src="js/roads.js?v=12"></script>
+  <script src="js/minsk.js?v=12"></script>
+  <script src="js/roads-minsk.js?v=12"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 </html>
