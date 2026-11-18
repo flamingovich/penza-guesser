@@ -106,7 +106,7 @@
 
   // ---------------- загрузка API ----------------
   function storedKey() { try { return localStorage.getItem('pg-apikey') || ''; } catch { return ''; } }
-  const API_KEY = (CFG.apiKey || storedKey()).trim();
+  const API_KEY = (storedKey() || (CFG.apiKeys && CFG.apiKeys[location.hostname]) || CFG.apiKey || '').trim();
 
   function loadYmaps() {
     return new Promise((resolve, reject) => {
