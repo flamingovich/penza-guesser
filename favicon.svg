@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- PenzaGuesser: «58» — код Пензенской области, цифры как дорожная разметка -->
+  <rect width="64" height="64" rx="14" fill="#131314"/>
+  <g fill="none" stroke="#ffcc33" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 5 -->
+    <path d="M27 13H14.5L13.5 29.5C15.5 27.8 18 27 20.5 27C25.5 27 29 30.6 29 35.5S25.3 44 20.3 44C16.8 44 14.3 42.6 12.8 40.5"/>
+    <!-- 8 -->
+    <circle cx="44" cy="20.5" r="6.5"/>
+    <circle cx="44" cy="35.5" r="8.5"/>
+  </g>
+  <!-- полоса разметки -->
+  <g fill="#ffcc33">
+    <rect x="12" y="51" width="11" height="4" rx="1.5"/>
+    <rect x="26.5" y="51" width="11" height="4" rx="1.5"/>
+    <rect x="41" y="51" width="11" height="4" rx="1.5"/>
+  </g>
+</svg>

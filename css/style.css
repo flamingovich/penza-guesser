@@ -86,12 +86,8 @@ kbd {
   padding: 40px 48px; max-width: 1600px; margin: 0 auto;
 }
 .menu-side { display: flex; flex-direction: column; justify-content: center; gap: 24px; animation: rise .45s var(--ease) both; }
-.brand { display: flex; align-items: center; gap: 10px; font: 500 16px/1 var(--display); letter-spacing: 0; }
-/* знак — кусок разметки: три штриха */
-.brand-mark {
-  width: 28px; height: 6px; border-radius: 2px;
-  background: repeating-linear-gradient(90deg, var(--accent) 0 8px, transparent 8px 10px);
-}
+.brand { display: flex; align-items: center; gap: 12px; font: 500 16px/1 var(--display); letter-spacing: 0; }
+.brand-logo { width: 32px; height: 32px; border-radius: 8px; box-shadow: 0 0 0 1px var(--line-2); }
 h1 {
   margin: 8px 0 0; font: 500 56px/1.04 var(--display); letter-spacing: -0.03em;
 }
